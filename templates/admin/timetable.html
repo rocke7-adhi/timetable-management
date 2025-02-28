@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timetable Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .timetable-cell {
+            min-height: 100px;
+            border: 1px solid #dee2e6;
+            padding: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .timetable-cell:hover {
+            background-color: #f8f9fa;
+        }
+        .class-card {
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .class-card:last-child {
+            margin-bottom: 0;
+        }
+        .empty-slot {
+            height: 100%;
+            min-height: 80px;
+            border: 2px dashed #dee2e6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6c757d;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .empty-slot:hover {
+            border-color: #0d6efd;
+            color: #0d6efd;
+            background-color: #f0f7ff;
+        }
+        .time-slot {
+            font-weight: bold;
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: center;
+        }
+        .day-header {
+            background-color: #e9ecef;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+        }
+        .substitute-btn {
+            width: 100%;
+            margin-top: 8px;
+        }
+        .class-name {
+            font-weight: 600;
+            color: #495057;
+        }
+        .teacher-name {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('admin_dashboard') }}">
+                <i class="fas fa-calendar-alt me-2"></i>Timetable Management
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('admin_dashboard') }}">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt me-1"></i>Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-calendar-alt me-2"></i>Class Timetable</h2>
+            <div class="d-flex gap-3">
+                <!-- Filter Controls -->
+                <div class="d-flex gap-2 align-items-center">
+                    <select class="form-select" id="filterType" onchange="updateFilterOptions()">
+                        <option value="all" {% if filter_type == 'all' %}selected{% endif %}>View All</option>
+                        <option value="class" {% if filter_type == 'class' %}selected{% endif %}>Filter by Class</option>
+                        <option value="staff" {% if filter_type == 'staff' %}selected{% endif %}>Filter by Staff</option>
+                    </select>
+                    
+                    <select class="form-select" id="filterClass" {% if filter_type != 'class' %}style="display: none;"{% endif %}>
+                        <option value="">Select Class...</option>
+                        {% for class in all_classes %}
+                        <option value="{{ class.id }}" {% if filter_id == class.id|string %}selected{% endif %}>
+                            {{ class.name }} ({{ class.subject }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    
+                    <select class="form-select" id="filterStaff" {% if filter_type != 'staff' %}style="display: none;"{% endif %}>
+                        <option value="">Select Staff...</option>
+                        {% for s in staff %}
+                        <option value="{{ s.id }}" {% if filter_id == s.id|string %}selected{% endif %}>
+                            {{ s.name }} ({{ s.department }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    
+                    <button class="btn btn-primary" onclick="applyFilter()">
+                        <i class="fas fa-filter me-1"></i>Apply Filter
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th class="time-slot">Time Slot</th>
+                        {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] %}
+                        <th class="day-header">{{ day }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for slot in time_slots %}
+                    <tr>
+                        <td class="time-slot">{{ slot.start_time_formatted }} - {{ slot.end_time_formatted }}</td>
+                        {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] %}
+                        <td class="timetable-cell" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#assignModal"
+                            data-day="{{ day }}"
+                            data-slot-id="{{ slot.id }}">
+                            {% if timetable[day] and slot.id in timetable[day] %}
+                                {% for class in timetable[day][slot.id] %}
+                                <div class="class-card">
+                                    <div class="class-name">{{ class.name }}</div>
+                                    {% if class.teacher_name %}
+                                        <div class="teacher-name">
+                                            <i class="fas fa-user-tie me-1"></i>{{ class.teacher_name }}
+                                        </div>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-primary substitute-btn"
+                                                onclick="event.stopPropagation(); showSubstitutionModal('{{ class.id }}', '{{ class.teacher_name }}', '{{ day }}', '{{ slot.id }}')">
+                                            <i class="fas fa-exchange-alt me-1"></i>Arrange Substitute
+                                        </button>
+                                    {% else %}
+                                        <div class="empty-slot">
+                                            <span><i class="fas fa-user-plus me-2"></i>Double-click to assign staff</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-slot">
+                                    <span><i class="fas fa-plus-circle me-2"></i>No class scheduled</span>
+                                </div>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Assign Staff Modal -->
+    <div class="modal fade" id="assignModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-plus me-2"></i>Assign Staff
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ url_for('assign_class') }}" method="POST">
+                    <div class="modal-body">
+                        <input type="hidden" name="day" id="dayField">
+                        <input type="hidden" name="time_slot_id" id="timeSlotId">
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-chalkboard-teacher me-1"></i>Select Class
+                            </label>
+                            <select class="form-select" name="class_id" required>
+                                <option value="">Choose class...</option>
+                                {% for class in unassigned_classes %}
+                                <option value="{{ class.id }}">{{ class.name }} ({{ class.subject }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="fas fa-user-tie me-1"></i>Select Staff
+                            </label>
+                            <select class="form-select" name="staff_id" required>
+                                <option value="">Choose staff...</option>
+                                {% for s in staff %}
+                                <option value="{{ s.id }}">{{ s.name }} ({{ s.department }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Close
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check me-1"></i>Assign
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Handle assign modal data
+        const assignModal = document.getElementById('assignModal');
+        assignModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const day = button.getAttribute('data-day');
+            const slotId = button.getAttribute('data-slot-id');
+            
+            document.getElementById('dayField').value = day;
+            document.getElementById('timeSlotId').value = slotId;
+        });
+
+        function showSubstitutionModal(classId, teacherName, day, slotId) {
+            event.stopPropagation(); // Prevent modal from opening
+            document.getElementById('subClassId').value = classId;
+            document.getElementById('currentStaffName').value = teacherName;
+            new bootstrap.Modal(document.getElementById('substitutionModal')).show();
+        }
+
+        // Auto-dismiss alerts after 5 seconds
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function(alert) {
+                    bootstrap.Alert.getOrCreateInstance(alert).close();
+                });
+            }, 5000);
+        });
+
+        function updateFilterOptions() {
+            const filterType = document.getElementById('filterType').value;
+            document.getElementById('filterClass').style.display = filterType === 'class' ? 'block' : 'none';
+            document.getElementById('filterStaff').style.display = filterType === 'staff' ? 'block' : 'none';
+        }
+        
+        function applyFilter() {
+            const filterType = document.getElementById('filterType').value;
+            let filterId = '';
+            
+            if (filterType === 'class') {
+                filterId = document.getElementById('filterClass').value;
+            } else if (filterType === 'staff') {
+                filterId = document.getElementById('filterStaff').value;
+            }
+            
+            const url = new URL(window.location.href);
+            url.searchParams.set('filter_type', filterType);
+            if (filterId) {
+                url.searchParams.set('filter_id', filterId);
+            } else {
+                url.searchParams.delete('filter_id');
+            }
+            
+            window.location.href = url.toString();
+        }
+    </script>
+</body>
+</html> 

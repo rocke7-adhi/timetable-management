@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="student-timetable">
+    <h2>Class Timetable</h2>
+    
+    <table class="timetable">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+                <th>Friday</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for time_slot in timetable %}
+            <tr>
+                <td>{{ time_slot.time }}</td>
+                {% for day in time_slot.days %}
+                <td class="{{ day.subject and 'has-class' }}">
+                    {% if day.subject %}
+                    <div class="class-info">
+                        <strong>{{ day.subject }}</strong>
+                        <span>{{ day.staff_name }}</span>
+                    </div>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %} 

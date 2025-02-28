@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="staff-dashboard">
+    <h2>Welcome, {{ current_user.username }}</h2>
+    
+    <div class="timetable-section">
+        <h3>Your Schedule</h3>
+        <table class="timetable">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Monday</th>
+                    <th>Tuesday</th>
+                    <th>Wednesday</th>
+                    <th>Thursday</th>
+                    <th>Friday</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for time_slot in timetable %}
+                <tr>
+                    <td>{{ time_slot.time }}</td>
+                    {% for day in time_slot.days %}
+                    <td class="{{ day.class_name and 'has-class' }}">
+                        {% if day.class_name %}
+                        <div class="class-info">
+                            <strong>{{ day.class_name }}</strong>
+                            <span>{{ day.subject }}</span>
+                        </div>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} 

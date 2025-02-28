@@ -1,0 +1,57 @@
+Admin:
+username: admin
+password: admin123
+
+Staff:
+username: staff1
+password: staff123
+
+Student:
+username: student1
+password: student123
+
+
+Open phpMyAdmin:
+  Go to: http://localhost/phpmyadmin
+  Login if needed
+Create New Database:
+  Click "New" on the left sidebar
+  Enter database name: faculty_timetable
+  Select "Collation": utf8_general_ci
+  Click "Create"
+Select the Database:
+  Click on faculty_timetable from the left sidebar
+Import SQL File:
+  Click the "Import" tab at the top
+  Click "Choose File"
+  Select your faculty_timetable.sql file
+  Under "Format", make sure "SQL" is selected
+  Scroll down and click "Go" or "Import"
+Verify Tables:
+  Click on faculty_timetable in the left sidebar
+  You should see these tables:
+    users
+    staff
+    students
+    classes
+    assignments
+    leave_requests
+    timetable
+    subjects
+    attendance
+    notifications
+    feedback
+    settings
+    logs
+    roles
+    permissions
+    user_roles
+    user_permissions
+    user_role_permissions 
+                            current (users
+                                    staff
+                                    students
+                                    classes
+                                    assignments
+                                    timetable
+                                    leave_requests)

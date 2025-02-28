@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Timetable Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav>
+        <div class="logo">Faculty Timetable</div>
+        {% if current_user.is_authenticated %}
+        <div class="nav-links">
+            {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('manage_staff') }}">Manage Staff</a>
+            {% elif current_user.role == 'staff' %}
+            <a href="{{ url_for('staff_dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('leave_request') }}">Request Leave</a>
+            {% elif current_user.role == 'student' %}
+            <a href="{{ url_for('student_timetable') }}">View Timetable</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+        {% endif %}
+    </nav>
+    
+    <div class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html> 
